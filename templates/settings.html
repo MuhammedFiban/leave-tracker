@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hassan Mohamed Almarzouqi Law Firm | Change Credentials</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f5f7;
+        }
+        .settings-card { background: white; border-radius: 1.5rem; box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
+        .btn-navy { background-color: #1E3A8A; transition: all 0.2s ease; }
+        .btn-navy:hover { background-color: #1e2f6e; transform: scale(0.98); }
+        .input-apple { border: 1px solid #e2e8f0; border-radius: 0.75rem; transition: all 0.2s ease; }
+        .input-apple:focus { outline: none; border-color: #1E3A8A; box-shadow: 0 0 0 3px rgba(30,58,138,0.1); }
+        .text-navy { color: #1E3A8A; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="settings-card max-w-md w-full p-8">
+        <h1 class="text-2xl font-semibold text-center mb-6 text-gray-800">Change Login Credentials</h1>
+        <form method="POST" action="/settings" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">New Email (username)</label>
+                <input type="email" name="email" required class="input-apple w-full px-4 py-2" value="{{ current_email }}">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <input type="password" name="password" required class="input-apple w-full px-4 py-2">
+            </div>
+            {% if error %}
+                <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg">{{ error }}</div>
+            {% endif %}
+            <button type="submit" class="btn-navy w-full text-white py-2 rounded-xl font-semibold transition">Update Credentials</button>
+        </form>
+        <p class="text-center text-xs text-gray-400 mt-4">After updating, you will be logged out. Use the new credentials to log in.</p>
+        <div class="text-center mt-4">
+            <a href="/dashboard" class="text-navy text-sm hover:underline">← Back to Dashboard</a>
+        </div>
+    </div>
+</body>
+</html>

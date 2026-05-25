@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Hassan Mohamed Almarzouqi Law Firm | HR Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f5f5f7; }
+        .bg-navy { background-color: #1E3A8A; }
+        .text-navy { color: #1E3A8A; }
+        .btn-navy { background-color: #1E3A8A; color: white; transition: all 0.2s ease; }
+        .btn-navy:hover { background-color: #1e2f6e; transform: scale(0.98); }
+        .bg-navy\/10 { background-color: rgba(30,58,138,0.1); }
+        .modal { transition: opacity 0.2s ease; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-10 bg-[#1E3A8A] shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <div class="bg-white/20 w-8 h-8 rounded-lg flex items-center justify-center"><i class="fas fa-gavel text-white text-sm"></i></div>
+                    <div><h1 class="text-xl font-semibold text-white">Hassan Mohamed Almarzouqi Law Firm</h1><p class="text-xs text-white/80">HR Leave Management</p></div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-white/90 text-sm hidden md:inline"><i class="far fa-user mr-1"></i> {{ username }}</span>
+                    <a href="/settings" class="text-white/80 hover:text-white text-sm"><i class="fas fa-cog"></i> Settings</a>
+                    <a href="/logout" class="text-white/80 hover:text-white text-sm"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="mb-8"><h1 class="text-3xl font-semibold text-gray-800">Leave Management Dashboard</h1><p class="text-gray-500 mt-1">Track employee leave, accruals, and upcoming absences.</p></div>
+
+        <div id="loadingIndicator" class="text-center py-10"><i class="fas fa-spinner fa-spin text-navy text-2xl"></i><p class="text-gray-500 mt-2">Loading leave data...</p></div>
+
+        <!-- Stats cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div><p class="text-sm text-gray-500">Total Leaves Taken in {{ current_year }}</p><p class="text-3xl font-semibold text-gray-800 mt-1" id="heroTotalTaken">0</p></div>
+                    <div class="bg-navy/10 p-3 rounded-full"><i class="fas fa-umbrella-beach text-navy text-xl"></i></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div><p class="text-sm text-gray-500">Active Employees</p><p class="text-3xl font-semibold text-gray-800 mt-1" id="heroTotalEmps">0</p></div>
+                    <div class="bg-navy/10 p-3 rounded-full"><i class="fas fa-users text-navy text-xl"></i></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div><p class="text-sm text-gray-500">Ongoing Leaves</p><p class="text-3xl font-semibold text-gray-800 mt-1" id="heroActiveLeaves">0</p></div>
+                    <div class="bg-navy/10 p-3 rounded-full"><i class="fas fa-bell text-navy text-xl"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-8">
+            <!-- LEFT COLUMN -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Staff Directory with delete icons -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100 flex flex-wrap justify-between items-center gap-2">
+                        <h2 class="font-medium text-gray-700"><i class="fas fa-id-card text-navy mr-2"></i>Staff Directory</h2>
+                        <div class="flex gap-2">
+                            <input type="text" id="searchEmployee" placeholder="Search name..." class="border border-gray-200 rounded-full px-4 py-1.5 text-sm w-40 focus:outline-none focus:ring-1 focus:ring-navy">
+                            <button id="openAddEmployeeModalBtn" class="bg-navy text-white text-sm px-4 py-1.5 rounded-full transition hover:bg-navy/90"><i class="fas fa-plus mr-1"></i> Add</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-100 text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left">Name</th>
+                                    <th class="px-4 py-3 text-left">Join Date</th>
+                                    <th class="px-4 py-3 text-center">Accrued</th>
+                                    <th class="px-4 py-3 text-center">Taken</th>
+                                    <th class="px-4 py-3 text-center">Remaining</th>
+                                    <th class="px-4 py-3 text-center">Additional</th>
+                                    <th class="px-4 py-3 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="empTbody"></tbody>
+                        </table>
+                        <div class="text-center py-2 border-t border-gray-100">
+                            <button id="toggleStaffBtn" class="text-sm text-navy hover:underline"><i class="fas fa-chevron-down mr-1"></i> Show More</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Request Leave -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h2 class="font-medium text-gray-700 mb-4"><i class="fas fa-pen-alt text-navy mr-2"></i>Request Leave (no approval)</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
+                        <div><label class="block text-xs text-gray-500">Employee</label><select id="leaveEmpId" class="w-full border rounded-lg px-3 py-2 text-sm"></select></div>
+                        <div><label class="block text-xs text-gray-500">Start Date</label><input type="text" id="startDate" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div><label class="block text-xs text-gray-500">End Date</label><input type="text" id="endDate" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
+                        <div><label class="block text-xs text-gray-500">Total days</label><input type="text" id="daysPreview" readonly class="w-full bg-gray-50 border rounded-lg px-3 py-2 text-sm"></div>
+                        <div><button id="openLeaveRequestModalBtn" class="bg-navy text-white w-full rounded-lg px-4 py-2 text-sm font-medium hover:bg-navy/90"><i class="fas fa-check-circle mr-1"></i> Preview & Submit</button></div>
+                    </div>
+                </div>
+
+                <!-- Leave History -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex flex-wrap justify-between items-center mb-3 gap-2">
+                        <h2 class="font-medium text-gray-700"><i class="fas fa-history text-navy mr-2"></i>Leave History</h2>
+                        <div class="flex gap-2 items-center">
+                            <input type="text" id="historyFilter" placeholder="Filter by name..." class="border border-gray-200 rounded-full px-3 py-1 text-sm w-36 focus:outline-none focus:ring-1 focus:ring-navy">
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto max-h-64 overflow-y-auto">
+                        <table class="min-w-full text-xs">
+                            <thead class="bg-gray-50 sticky top-0">…
+<th class="p-2 text-left">Employee</th><th class="p-2 text-left">Period</th><th class="p-2 text-center">Days</th><th class="p-2 text-center">Year</th><th class="p-2"></th>……
+                            </thead>
+                            <tbody id="historyTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div class="space-y-6">
+                <div class="bg-white rounded-2xl shadow-sm border-l-4 border-red-400 p-5">
+                    <h2 class="font-medium"><i class="fas fa-bell text-red-500 mr-2"></i> HR Notifications</h2>
+                    <p class="text-xs text-gray-400 mb-2">Leaves currently active</p>
+                    <div id="alertsDiv" class="space-y-2"></div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                    <h2 class="font-medium"><i class="fas fa-calendar-week text-navy mr-2"></i> Upcoming Leaves</h2>
+                    <p class="text-xs text-gray-400 mb-2">Start date > today, earliest first</p>
+                    <div id="upcomingDiv" class="text-sm space-y-2 max-h-56 overflow-y-auto"></div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                    <h2 class="font-medium"><i class="fas fa-calculator text-navy mr-2"></i>Leave entitlement calculator</h2>
+                    <div class="mt-2 flex gap-2 items-end"><div class="flex-1"><label class="block text-xs text-gray-500">Months worked</label><input type="number" id="monthsWorked" value="5" step="0.5" class="w-full border rounded-lg px-3 py-1.5 text-sm"></div><button id="calcMonthsBtn" class="bg-gray-800 text-white px-3 py-1.5 rounded-lg text-sm">Calc</button></div>
+                    <div class="mt-3 bg-gray-50 p-2 rounded-lg text-center"><span class="text-xs text-gray-500">Earned leave days (2.5 per month): </span><span id="calcResult" class="font-bold text-navy text-lg">12.5</span> <span class="text-xs">days</span></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL: Add Employee -->
+    <div id="addEmployeeModal" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-96 p-6">
+            <h3 class="text-lg font-semibold mb-4"><i class="fas fa-user-plus text-navy mr-2"></i>Add New Employee</h3>
+            <div class="space-y-4">
+                <div><label class="block text-sm font-medium">Full Name</label><input type="text" id="modalEmpName" class="w-full border rounded-lg px-3 py-2"></div>
+                <div><label class="block text-sm font-medium">Join Date</label><input type="text" id="modalJoinDate" placeholder="YYYY-MM-DD" class="w-full border rounded-lg px-3 py-2"></div>
+                <p class="text-xs text-gray-500">Employee will receive 30 days annual leave for the current year.</p>
+                <div class="flex justify-end gap-2"><button id="closeModalBtn" class="px-4 py-2 border rounded-lg">Cancel</button><button id="saveEmployeeModalBtn" class="bg-navy text-white px-4 py-2 rounded-lg">Save</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Confirm Leave Request -->
+    <div id="leaveRequestConfirmModal" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-96 p-6">
+            <h3 class="text-lg font-semibold mb-4"><i class="fas fa-calendar-check text-navy mr-2"></i>Confirm Leave Request</h3>
+            <div id="confirmLeaveDetails" class="space-y-2 text-sm"></div>
+            <div class="flex justify-end gap-2 mt-6"><button id="cancelLeaveBtn" class="px-4 py-2 border rounded-lg">Cancel</button><button id="confirmLeaveSubmitBtn" class="bg-navy text-white px-4 py-2 rounded-lg">Confirm</button></div>
+        </div>
+    </div>
+
+    <!-- MODAL: Confirm Delete Employee -->
+    <div id="deleteConfirmModal" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-96 p-6">
+            <h3 class="text-lg font-semibold mb-4"><i class="fas fa-trash-alt text-red-500 mr-2"></i>Confirm Delete</h3>
+            <p id="deleteConfirmMessage" class="text-gray-600 mb-6">Are you sure you want to permanently delete this employee? This action cannot be undone.</p>
+            <div class="flex justify-end gap-2">
+                <button id="cancelDeleteBtn" class="px-4 py-2 border rounded-lg">Cancel</button>
+                <button id="confirmDeleteBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Confirm Delete Leave Record -->
+    <div id="deleteLeaveConfirmModal" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-96 p-6">
+            <h3 class="text-lg font-semibold mb-4"><i class="fas fa-trash-alt text-red-500 mr-2"></i>Confirm Delete Leave</h3>
+            <p id="deleteLeaveConfirmMessage" class="text-gray-600 mb-6">Are you sure you want to permanently delete this leave record? This action cannot be undone.</p>
+            <div class="flex justify-end gap-2">
+                <button id="cancelDeleteLeaveBtn" class="px-4 py-2 border rounded-lg">Cancel</button>
+                <button id="confirmDeleteLeaveBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+    <script>
+        flatpickr("#startDate", { dateFormat: "Y-m-d", allowInput: true });
+        flatpickr("#endDate", { dateFormat: "Y-m-d", allowInput: true });
+        flatpickr("#modalJoinDate", { dateFormat: "Y-m-d", allowInput: true });
+
+        let allLeaves = [];
+        let fullEmployeeList = [];
+        let showAllEmployees = false;
+        const INITIAL_ROWS = 5;
+
+        const fetchJson = async (url) => { const res = await fetch(url + '?_=' + Date.now()); return res.json(); };
+
+        async function renderDashboard() {
+            const loader = document.getElementById('loadingIndicator');
+            if (loader) loader.style.display = 'block';
+            const [emps, leaves, notif] = await Promise.all([
+                fetchJson('/api/employees'),
+                fetchJson('/api/leaves'),
+                fetchJson('/api/notifications')
+            ]);
+            fullEmployeeList = emps;
+            allLeaves = leaves;
+            const currentYear = new Date().getFullYear();
+            const totalTaken = leaves.filter(l => l.year === currentYear).reduce((s,l) => s + l.days, 0);
+            document.getElementById('heroTotalTaken').innerText = totalTaken.toFixed(1);
+            document.getElementById('heroTotalEmps').innerText = emps.length;
+            document.getElementById('heroActiveLeaves').innerText = notif.length;
+
+            renderEmployeeTable();
+            document.getElementById('leaveEmpId').innerHTML = emps.map(e => `<option value="${e.id}">${escapeHtml(e.name)}</option>`).join('');
+            renderLeaveHistory();
+
+            document.getElementById('alertsDiv').innerHTML = notif.length ? notif.map(a => `<div class="bg-red-50 p-2 rounded-lg"><div class="flex justify-between"><span class="font-medium">${escapeHtml(a.employeeName)}</span><span class="text-xs bg-red-200 px-1.5 py-0.5 rounded-full">${a.startedToday ? 'Started today' : 'Ongoing'}</span></div><div class="text-xs">${a.startDate} → ${a.endDate} (${a.days} days)</div></div>`).join('') : '<div class="text-sm text-gray-400">No active leaves</div>';
+            const today = new Date(); today.setHours(0,0,0,0);
+            const upcoming = leaves.filter(l => new Date(l.startDate) > today).sort((a,b)=>new Date(a.startDate)-new Date(b.startDate));
+            document.getElementById('upcomingDiv').innerHTML = upcoming.length ? upcoming.map(l => `<div class="bg-gray-50 p-2 rounded-lg flex justify-between"><div><span class="font-medium">${escapeHtml(l.employeeName)}</span><div class="text-xs">${l.startDate} → ${l.endDate}</div></div><span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">${l.days} days</span></div>`).join('') : '<div class="text-sm text-gray-400">No upcoming leaves</div>';
+            if (loader) loader.style.display = 'none';
+        }
+
+        function renderEmployeeTable() {
+            const searchTerm = document.getElementById('searchEmployee').value.toLowerCase();
+            let filtered = fullEmployeeList.filter(e => e.name.toLowerCase().includes(searchTerm));
+            const rowsToShow = showAllEmployees ? filtered.length : INITIAL_ROWS;
+            const visible = filtered.slice(0, rowsToShow);
+            document.getElementById('empTbody').innerHTML = visible.map(e => `
+                <tr>
+                    <td class="px-4 py-2 font-medium">${escapeHtml(e.name)}</td>
+                    <td class="px-4 py-2 text-xs">${e.joinDate}</td>
+                    <td class="px-4 py-2 text-center">${e.accrued}</td>
+                    <td class="px-4 py-2 text-center">${e.taken}</td>
+                    <td class="px-4 py-2 text-center font-bold">${e.remaining}</td>
+                    <td class="px-4 py-2 text-center">${e.additional}</td>
+                    <td class="px-4 py-2 text-center">
+                        <button onclick="showDeleteEmployeeModal(${e.id}, '${escapeHtml(e.name)}')" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                 `
+            ).join('');
+            const toggleBtn = document.getElementById('toggleStaffBtn');
+            if (filtered.length > INITIAL_ROWS) {
+                toggleBtn.style.display = 'inline-flex';
+                toggleBtn.innerHTML = showAllEmployees ? '<i class="fas fa-chevron-up mr-1"></i> Show Less' : '<i class="fas fa-chevron-down mr-1"></i> Show More';
+            } else {
+                toggleBtn.style.display = 'none';
+            }
+        }
+
+        function renderLeaveHistory() {
+            const filterText = document.getElementById('historyFilter').value.toLowerCase();
+            let filtered = allLeaves.filter(l => l.employeeName.toLowerCase().includes(filterText));
+            document.getElementById('historyTbody').innerHTML = filtered.map(l => `
+                <tr>
+                    <td class="p-2">${escapeHtml(l.employeeName)}</td>
+                    <td class="p-2 text-xs">${l.startDate} – ${l.endDate}</td>
+                    <td class="p-2 text-center">${l.days}</td>
+                    <td class="p-2 text-center">${l.year}</td>
+                    <td class="p-2 text-center">
+                        <button onclick="showDeleteLeaveModal(${l.id}, '${escapeHtml(l.employeeName)}', '${l.startDate}', '${l.endDate}')" class="text-red-400 hover:text-red-600">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                 `
+            ).join('');
+        }
+
+        // ----- Delete Employee Logic (modal) -----
+        let pendingDeleteEmployeeId = null;
+        let pendingDeleteEmployeeName = '';
+
+        function showDeleteEmployeeModal(id, name) {
+            pendingDeleteEmployeeId = id;
+            pendingDeleteEmployeeName = name;
+            document.getElementById('deleteConfirmMessage').innerText = `Are you sure you want to permanently delete "${name}"? This action cannot be undone.`;
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        }
+
+        document.getElementById('cancelDeleteBtn').onclick = () => {
+            document.getElementById('deleteConfirmModal').classList.add('hidden');
+            pendingDeleteEmployeeId = null;
+        };
+
+        document.getElementById('confirmDeleteBtn').onclick = async () => {
+            if (!pendingDeleteEmployeeId) return;
+            try {
+                const res = await fetch(`/api/employees/${pendingDeleteEmployeeId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`✅ ${pendingDeleteEmployeeName} deleted successfully`, 'success');
+                    renderDashboard();
+                } else {
+                    showToast(`❌ ${data.error || 'Delete failed'}`, 'error');
+                }
+            } catch (err) {
+                showToast('❌ Network error', 'error');
+            }
+            document.getElementById('deleteConfirmModal').classList.add('hidden');
+            pendingDeleteEmployeeId = null;
+        };
+
+        // ----- Delete Leave Logic (modal) -----
+        let pendingDeleteLeaveId = null;
+        let pendingDeleteLeaveInfo = '';
+
+        function showDeleteLeaveModal(id, empName, startDate, endDate) {
+            pendingDeleteLeaveId = id;
+            pendingDeleteLeaveInfo = `${empName} (${startDate} to ${endDate})`;
+            document.getElementById('deleteLeaveConfirmMessage').innerText = `Are you sure you want to permanently delete the leave record for ${pendingDeleteLeaveInfo}? This action cannot be undone.`;
+            document.getElementById('deleteLeaveConfirmModal').classList.remove('hidden');
+        }
+
+        document.getElementById('cancelDeleteLeaveBtn').onclick = () => {
+            document.getElementById('deleteLeaveConfirmModal').classList.add('hidden');
+            pendingDeleteLeaveId = null;
+        };
+
+        document.getElementById('confirmDeleteLeaveBtn').onclick = async () => {
+            if (!pendingDeleteLeaveId) return;
+            try {
+                const res = await fetch(`/api/leaves/${pendingDeleteLeaveId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`✅ Leave record deleted successfully`, 'success');
+                    renderDashboard();
+                } else {
+                    showToast(`❌ ${data.error || 'Delete failed'}`, 'error');
+                }
+            } catch (err) {
+                showToast('❌ Network error', 'error');
+            }
+            document.getElementById('deleteLeaveConfirmModal').classList.add('hidden');
+            pendingDeleteLeaveId = null;
+        };
+
+        // ----- Toast Notifications -----
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-2 rounded-lg shadow-lg text-white transition-opacity duration-300 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
+            toast.innerText = message;
+            document.getElementById('toastContainer').appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // ----- Leave Request Modal -----
+        let pendingLeaveData = null;
+        const openModalBtn = document.getElementById('openLeaveRequestModalBtn');
+        const confirmBtn = document.getElementById('confirmLeaveSubmitBtn');
+        const cancelBtn = document.getElementById('cancelLeaveBtn');
+        const leaveModal = document.getElementById('leaveRequestConfirmModal');
+
+        if (openModalBtn) {
+            openModalBtn.onclick = async () => {
+                const empId = document.getElementById('leaveEmpId').value;
+                const start = document.getElementById('startDate').value;
+                const end = document.getElementById('endDate').value;
+                if(!empId || !start || !end) { alert('Please fill all fields'); return; }
+                const empName = document.getElementById('leaveEmpId').options[document.getElementById('leaveEmpId').selectedIndex]?.text;
+                const res = await fetch(`/api/count-days?start=${start}&end=${end}`);
+                const data = await res.json();
+                const days = data.days;
+                if(days === 0) { alert('Invalid date range'); return; }
+                pendingLeaveData = { empId: parseInt(empId), start, end, days, empName };
+                document.getElementById('confirmLeaveDetails').innerHTML = `
+                    <p><strong>Employee:</strong> ${escapeHtml(empName)}</p>
+                    <p><strong>Period:</strong> ${start} → ${end}</p>
+                    <p><strong>Total days (calendar):</strong> ${days}</p>
+                `;
+                leaveModal.classList.remove('hidden');
+            };
+        }
+
+        if (confirmBtn) {
+            confirmBtn.onclick = async () => {
+                if(!pendingLeaveData) return;
+                const payload = {
+                    employeeId: pendingLeaveData.empId,
+                    startDate: pendingLeaveData.start,
+                    endDate: pendingLeaveData.end
+                };
+                const res = await fetch('/api/leaves', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const result = await res.json();
+                if(res.ok) {
+                    leaveModal.classList.add('hidden');
+                    document.getElementById('startDate').value = '';
+                    document.getElementById('endDate').value = '';
+                    document.getElementById('daysPreview').value = '';
+                    pendingLeaveData = null;
+                    renderDashboard();
+                } else {
+                    alert(result.error);
+                }
+            };
+        }
+
+        if (cancelBtn) {
+            cancelBtn.onclick = () => {
+                leaveModal.classList.add('hidden');
+                pendingLeaveData = null;
+            };
+        }
+
+        // Helper: preview days
+        async function previewDays() {
+            const start = document.getElementById('startDate').value, end = document.getElementById('endDate').value;
+            if(start && end) { const res = await fetch(`/api/count-days?start=${start}&end=${end}`); const data = await res.json(); document.getElementById('daysPreview').value = data.days + ' day(s)'; }
+            else document.getElementById('daysPreview').value = '';
+        }
+        document.getElementById('startDate').addEventListener('change', previewDays);
+        document.getElementById('endDate').addEventListener('change', previewDays);
+        document.getElementById('searchEmployee').addEventListener('input', () => renderEmployeeTable());
+        document.getElementById('historyFilter').addEventListener('input', renderLeaveHistory);
+        document.getElementById('toggleStaffBtn').addEventListener('click', () => {
+            showAllEmployees = !showAllEmployees;
+            renderEmployeeTable();
+        });
+
+        // Add employee modal
+        const addModal = document.getElementById('addEmployeeModal');
+        document.getElementById('openAddEmployeeModalBtn').onclick = () => addModal.classList.remove('hidden');
+        document.getElementById('closeModalBtn').onclick = () => addModal.classList.add('hidden');
+        document.getElementById('saveEmployeeModalBtn').onclick = async () => {
+            const name = document.getElementById('modalEmpName').value.trim();
+            const joinDate = document.getElementById('modalJoinDate').value.trim();
+            if(!name || !joinDate) return alert('Please enter name and join date');
+            const res = await fetch('/api/employees', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, joinDate }) });
+            if(res.ok) {
+                addModal.classList.add('hidden');
+                document.getElementById('modalEmpName').value = '';
+                document.getElementById('modalJoinDate').value = '';
+                renderDashboard();
+            } else {
+                const err = await res.json();
+                alert(err.error);
+            }
+        };
+
+        // Calculator
+        document.getElementById('calcMonthsBtn').addEventListener('click', () => { let m = parseFloat(document.getElementById('monthsWorked').value) || 0; document.getElementById('calcResult').innerText = (m * 2.5).toFixed(1); });
+        document.getElementById('monthsWorked').addEventListener('input', () => { let m = parseFloat(document.getElementById('monthsWorked').value) || 0; document.getElementById('calcResult').innerText = (m * 2.5).toFixed(1); });
+
+        function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+        renderDashboard();
+    </script>
+</body>
+</html>
